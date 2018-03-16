@@ -73,6 +73,7 @@ Drupal Runner creates snapshots of a configurable source environment Drupal file
 activation {
   snapshot_autoextend_threshold = 70
   snapshot_autoextend_percent = 20
+}
 ```
 
 This makes sure that once 70 percent of a snapshot are used, it is increased by 20 percent.
