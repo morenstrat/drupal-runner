@@ -79,7 +79,7 @@ This makes sure that once 70 percent of a snapshot are used, it is increased by 
 
 ## Client / CI-Configuration
 
-In your repository, you will need a .gitlab-ci.yml file. There is a template at [https://github.com/morenstrat/drupal-project] - but be warned, this is work in progress.
+In your repository, you will need a `.gitlab-ci.yml` file. There is a template at https://github.com/morenstrat/drupal-project - but be warned, this is work in progress.
 
 A CLI for the client side of Drupal Runner is in the making. In the meantime, the necessary steps to set up your repository for Drupal Runner, should be executed manually. These steps highly depend on your local environment, but you should roughly perform the following steps:
 
@@ -88,10 +88,10 @@ A CLI for the client side of Drupal Runner is in the making. In the meantime, th
 * Create a git repository and push it to your GitLab server (`git init, git add ., git commit -m "Initial commit.", git remote add origin REPO-URL, git push -u origin master`)
 * Drupal Runner will now install Drupal
 * Once Drupal is installed, got the created environment and copy the environment ID
-* Now add the environment ID to the .gitlab-ci.yml file
-* Also edit the drush/sites/self.site.yml file and add the missing configuration
-* Setup yout local database connection in web/sites/default/settings.local.php
-* Import the database from the master Review App: drush sql:sync @self.master @self
+* Now add the environment ID to the `.gitlab-ci.yml` file
+* Also edit the `drush/sites/self.site.yml` file and add the missing configuration
+* Setup yout local database connection in `web/sites/default/settings.local.php`
+* Import the database from the master Review App: `drush sql:sync @self.master @self`
 * IMPORTANT: Export and commit the configuration now! (`drush cex, git add config/sync, git commit -m "Exported config."`, git push)
 * Create the second static environment: `git checkout -b develop, git push -u origin develop`
 * Create feature branches and push them
