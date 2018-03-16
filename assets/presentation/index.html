@@ -1,237 +1,49 @@
+<!doctype html>
 <html>
-<head>
-  <title>GitLab Review Apps with Drupal</title>
-  <link rel="stylesheet" href="css/reveal.css">
-  <link rel="stylesheet" href="css/theme/black.css">
-  <link rel="stylesheet" href="lib/css/zenburn.css">
-</head>
-<body>
-<div class="reveal" style="background-image: url(img/watermark.png); background-repeat: no-repeat; background-position: bottom left; background-size: 8%;">
-  <div class="slides">
-    <!-- Cover -->
-    <section>
-      <h1>GitLab Review Apps<br>with Drupal</h1>
-      <p><a href="https://drupalcamp.ruhr">DrupalCamp Ruhr 2018</a></p>
-      <p><a href="https://reinblau.de"><img class="plain" style="background: none;" src="img/logo.svg" alt="Logo Reinblau"/></a></p>
-    </section>
-    <!-- About me -->
-    <section>
-      <h2>About me</h2>
-      <p>Markus Orenstrat</p>
-      <p><a href="https://drupal.org/u/morenstrat" target="_blank">@morenstrat</a></p>
-      <p><a href="https://reinblau.de"><img class="plain" style="background: none;" src="img/logo.svg" alt="Logo Reinblau"/></a></p>
-      <p>Backend Development and Dev-Ops</p>
-    </section>
-    <!-- Course of Session -->
-    <section>
-      <h2>Course of Session</h2>
-      <ul>
-        <li class="fragment">Overview Review Apps</li>
-        <li class="fragment">Demo Review Apps</li>
-        <li class="fragment">Maybe a Screencast</li>
-        <li class="fragment">Details (Configuration)</li>
-        <li class="fragment">More Details (Code)</li>
-      </ul>
-    </section>
-    <!-- What are Review Apps? -->
-    <section>
-      <section>
-        <h2>What are Review Apps?</h2>
-        <ul>
-          <li class="fragment">One Drupal instance per Git branch</li>
-          <li class="fragment">Dynamic GitLab environments</li>
-          <li class="fragment">Static GitLab environments</li>
-        </ul>
-      </section>
-      <section>
-        <h2>Environments</h2>
-        <p><img class="plain" style="background: none;" src="img/environments.png" alt="Environments"/></p>
-      </section>
-      <section>
-        <h2>Why use Review Apps?</h2>
-        <ul>
-          <li>Simple (automatic) isolated testing</li>
-          <li>CI, CD goodness</li>
-          <li>Easy feature approval</li>
-          <li class="fragment">Present your work to...
-            <ul>
-              <li class="fragment">Team members (developers)</li>
-              <li class="fragment">Product Owner</li>
-              <li class="fragment">Other Stakeholders</li>
-            </ul>
-          </li>
-        </ul>
-      </section>
-      <section>
-        <h2>Schema</h2>
-        <p><img class="plain" style="background: none;" src="img/schema.svg" alt="Schema"/></p>
-      </section>
-    </section>
-    <!-- Why GitLab? Why not XY? -->
-    <section>
-      <h2>Why GitLab? Why not XY?</h2>
-      <ul>
-        <li class="fragment">Costs</li>
-        <li class="fragment">Data protection</li>
-        <li class="fragment">Flexibility</li>
-        <li class="fragment">Self-hosted</li>
-      </ul>
-    </section>
-    <!-- Requirements -->
-    <section>
-      <h2>Requirements</h2>
-      <ul>
-        <li class="fragment">GitLab Server and GitLab Runner</li>
-        <li class="fragment">Linux with sudo, lvm2 and rsync</li>
-        <li class="fragment">Wildcard DNS *.example.org</li>
-        <li class="fragment">Apache or Nginx</li>
-        <li class="fragment">MySQL or MariaDB</li>
-        <li class="fragment">composer, drush</li>
-        <li class="fragment">Drupal Runner</li>
-      </ul>
-    </section>
-    <!-- Drupal Runner -->
-    <section>
-      <h2>What is Drupal Runner?</h2>
-      <ul>
-        <li class="fragment">Two Bash scripts</li>
-        <li class="fragment">One configuration file</li>
-        <li class="fragment">Composer Drupal template</li>
-        <li class="fragment">Template for a .gitlab-ci.yml file</li>
-        <li class="fragment">Planned: Simple CLI for developers</li>
-      </ul>
-    </section>
-    <!-- Demo -->
-    <section>
-      <section>
-        <h1>Demo!</h1>
-      </section>
-      <section>
-        <h2>Setup</h2>
-        <ul>
-          <li class="fragment">GitLab Server (gitlab-ce.test)</li>
-          <li class="fragment">GitLab Runner (gitlab-runner.test)</li>
-          <li class="fragment">Workstation (ultrabook)</li>
-        </ul>
-      </section>
-    </section>
-    <!-- Requirements -->
-    <section>
-      <h2>Requirements</h2>
-      <ul>
-        <li class="fragment">GitLab Server and GitLab Runner</li>
-        <li class="fragment">Linux with sudo, lvm2 and rsync</li>
-        <li class="fragment">Wildcard DNS *.example.org</li>
-        <li class="fragment">Apache or Nginx</li>
-        <li class="fragment">MySQL or MariaDB</li>
-        <li class="fragment">composer, drush</li>
-        <li class="fragment">Drupal Runner</li>
-      </ul>
-    </section>
-    <!-- Gitlab Runner -->
-    <section>
-      <h2>GitLab Runner</h2>
-      <ul>
-        <li class="fragment">GitLab CI Coordinator URL</li>
-        <li class="fragment">GitLab CI Runner Token</li>
-        <li class="fragment">GitLab CI Tags</li>
-        <li class="fragment">Run untagged builds?</li>
-        <li class="fragment">Lock to current project?</li>
-        <li class="fragment">Executor (shell, docker, ...)</li>
-      </ul>
-    </section>
-    <!-- Apache -->
-    <section>
-      <h2>Apache</h2>
-      <p>Module vhost_alias</p>
-      <pre><code data-noescape class="apache">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-        &lt;VirtualHost *:80&gt;
-          ServerAlias *.gitlab-runner.test
-          VirtualDocumentRoot /var/www/%1/web
-        &lt;/VirtualHost&gt;
+		<title>reveal.js</title>
 
-      </code></pre>
-    </section>
-    <!-- MySQL -->
-    <section>
-      <h2>MySQL / MariaDB</h2>
-      <pre><code data-noescape class="sql">
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css">
 
-        CREATE USER 'gitlab-runner'@'localhost';
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
 
-        GRANT ALL PRIVILEGES ON  `dr\_%` . * TO &#8617;
-          'gitlab-runner'@'localhost';
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>Slide 1</section>
+				<section>Slide 2</section>
+			</div>
+		</div>
 
-      </code></pre>
-    </section>
-    <!-- Sudo -->
-    <section>
-      <h2>Sudo</h2>
-      <pre><code>
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
 
-        /etc/sudoers.d/gitlab-runner:
-
-        gitlab-runner ALL=(ALL) NOPASSWD: &#8617;
-          /usr/local/bin/drupal-runner-sudo
-
-      </code></pre>
-    </section>
-    <!-- Logical Volume Manager -->
-    <section>
-      <h2>Logical Volume Manager</h2>
-      <pre><code data-noescape>
-
-        /etc/lvm/lvm.conf:
-
-        activation {
-          snapshot_autoextend_threshold = 70
-          snapshot_autoextend_percent = 20
-        }
-
-      </code></pre>
-    </section>
-    <!-- Drupal Runner -->
-    <section>
-      <h2>Drupal Runner</h2>
-      <pre><code data-noescape>
-
-        DRUPAL_RUNNER_BASE_DIR="/var/www"
-        DRUPAL_RUNNER_LOGICAL_VOLUME_PREFIX="/dev/vg0/dr-"
-        DRUPAL_RUNNER_DATABASE_PREFIX="dr_"
-
-      </code></pre>
-    </section>
-    <!-- .gitlab-ci.yml -->
-    <section>
-      <h2>.gitlab-ci.yml</h2>
-      <ul>
-        <li class="fragment">(environment) variables</li>
-        <li class="fragment">stages</li>
-        <li class="fragment">jobs</li>
-        <li class="fragment">scripts</li>
-        <li class="fragment">conditions</li>
-        <li class="fragment">... a lot more</li>
-      </ul>
-    </section>
-    <!-- Code -->
-    <section>
-      <h1>Code!</h1>
-    </section>
-  </div>
-</div>
-<script src="lib/js/head.min.js"></script>
-<script src="js/reveal.js"></script>
-<script>
-  Reveal.initialize({
-    history: true,
-    dependencies: [
-      { src: 'plugin/markdown/marked.js' },
-      { src: 'plugin/markdown/markdown.js' },
-      { src: 'plugin/notes/notes.js', async: true },
-      { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
-    ]
-  });
-</script>
-</body>
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
 </html>
