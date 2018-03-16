@@ -1,0 +1,159 @@
+#!/bin/bash
+set -euf -o pipefail
+source /etc/drupal-runner.conf
+
+REVIEW_URL="${CI_ENVIRONMENT_URL-}"
+REVIEW_ENVIRONMENT="${CI_ENVIRONMENT_SLUG-}"
+REVIEW_BRANCH="${CI_COMMIT_REF_NAME}"
+REVIEW_HOSTNAME="${REVIEW_ENVIRONMENT}.${REVIEW_DOMAIN}"
+REVIEW_TRUSTED_HOSTNAME="${REVIEW_HOSTNAME//./\\\\.}"
+REVIEW_HASH_SALT="`dd if=/dev/urandom bs=1 count=55 2>/dev/null | base64 -w 0 | rev | cut -b 3-`"
+REVIEW_DIR="${DRUPAL_RUNNER_BASE_DIR}/${REVIEW_ENVIRONMENT}"
+SOURCE_DIR="${DRUPAL_RUNNER_BASE_DIR}/${SOURCE_ENVIRONMENT}"
+REVIEW_FILES_DIR="${REVIEW_DIR}/web/sites/default/files"
+SOURCE_FILES_DIR="${SOURCE_DIR}/web/sites/default/files"
+REVIEW_DATABASE="${DRUPAL_RUNNER_DATABASE_PREFIX}${REVIEW_ENVIRONMENT//-/_}"
+SOURCE_DATABASE="${DRUPAL_RUNNER_DATABASE_PREFIX}${SOURCE_ENVIRONMENT//-/_}"
+
+if [[ "${USER}" != "gitlab-runner" ]]; then
+  echo "Cannot run as ${USER}"
+  exit 1
+fi
+
+function is_dynamic_environment {
+  if [[ "${REVIEW_BRANCH}" == "master" || "${REVIEW_BRANCH}" == "develop" ]]; then
+    echo "Cannot operate on static environment ${REVIEW_BRANCH}"
+    exit 1
+  fi
+}
+
+function is_static_environment {
+  if [[ "${REVIEW_BRANCH}" != "master" && "${REVIEW_BRANCH}" != "develop" ]]; then
+    echo "Cannot operate on dynamic environment ${REVIEW_BRANCH}"
+    exit 1
+  fi
+}
+
+function run_drush_tasks {
+  run_drush_task updb
+  run_drush_task cim
+  run_drush_task entup
+  run_drush_task cron
+}
+
+function run_drush_task {
+  drush -r "${REVIEW_DIR}/web" -l "${REVIEW_URL}" --yes "${@}"
+}
+
+function run_tests {
+  echo "Running tests..."
+}
+
+function sync_artifacts {
+  rsync -a --delete --exclude="/web/sites/default/files/" --exclude="/web/sites/default/settings.local.php" "./" "${REVIEW_DIR}/"
+}
+
+function install_dependencies {
+  composer install
+}
+
+function update_static_environment {
+  if [[ -z "`mysql -e "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${REVIEW_DATABASE}'"`" ]]; then
+    install_drupal
+  else
+    run_drush_tasks
+  fi
+}
+
+function install_drupal {
+  create_local_settings
+  create_files_directory
+  sudo drupal-runner-sudo prepare_logical_volume "${REVIEW_ENVIRONMENT}"
+
+  if [[ "${REVIEW_BRANCH}" == "master" ]]; then
+    run_drush_task site:install standard --db-url="mysql://gitlab-runner@localhost/${REVIEW_DATABASE}" --sites-subdir="default" --account-pass="admin"
+  fi
+
+  if [[ "${REVIEW_BRANCH}" == "develop" ]]; then
+    mysql -e "CREATE DATABASE ${REVIEW_DATABASE}"
+    mysqldump --single-transaction "${SOURCE_DATABASE}" | mysql "${REVIEW_DATABASE}"
+    sudo drupal-runner-sudo sync_files "${REVIEW_ENVIRONMENT}" "${SOURCE_ENVIRONMENT}"
+    run_drush_task cr
+  fi
+}
+
+function prepare_snapshot {
+  sudo drupal-runner-sudo prepare_snapshot "${REVIEW_ENVIRONMENT}" "${SOURCE_ENVIRONMENT}"
+}
+
+function remove_snapshot {
+  sudo drupal-runner-sudo remove_snapshot "${REVIEW_ENVIRONMENT}"
+}
+
+function remove_review_dir {
+  test -d "${REVIEW_DIR}" && rm -rf "${REVIEW_DIR}"
+}
+
+function remove_database {
+  mysql -e "DROP DATABASE IF EXISTS ${REVIEW_DATABASE}"
+}
+
+function create_database {
+  if [[ -z "`mysql -e "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${REVIEW_DATABASE}'"`" ]]; then
+    mysql -e "CREATE DATABASE ${REVIEW_DATABASE}"
+    mysqldump --single-transaction "${SOURCE_DATABASE}" | mysql "${REVIEW_DATABASE}"
+  fi
+}
+
+function create_files_directory {
+  test -d "${REVIEW_DIR}/web/sites/default/files" || mkdir -p "${REVIEW_DIR}/web/sites/default/files"
+}
+
+function create_local_settings {
+  cat <<EOF > "${REVIEW_DIR}/web/sites/default/settings.local.php"
+<?php
+\$settings['hash_salt'] = '${REVIEW_HASH_SALT}';
+\$settings['trusted_host_patterns'] = array(
+  '^${REVIEW_TRUSTED_HOSTNAME}$',
+);
+\$databases['default']['default'] = array(
+  'database' => '${REVIEW_DATABASE}',
+  'username' => 'gitlab-runner',
+  'password' => '',
+  'prefix' => '',
+  'host' => 'localhost',
+  'port' => '3306',
+  'namespace' => 'Drupal\\\\Core\\\\Database\\\\Driver\\\\mysql',
+  'driver' => 'mysql',
+);
+EOF
+}
+
+case "${1}" in
+  "build")
+    install_dependencies
+    ;;
+  "test")
+    run_tests
+    ;;
+  "review")
+    is_dynamic_environment
+    create_database
+    sync_artifacts
+    create_files_directory
+    create_local_settings
+    prepare_snapshot
+    run_drush_tasks
+    ;;
+  "stop_review")
+    is_dynamic_environment
+    remove_snapshot
+    remove_review_dir
+    remove_database
+    ;;
+  "deploy")
+    is_static_environment
+    sync_artifacts
+    update_static_environment
+    ;;
+esac

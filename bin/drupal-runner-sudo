@@ -1,0 +1,86 @@
+#!/bin/bash
+set -euf -o pipefail
+source /etc/drupal-runner.conf
+
+ACTION="${1}"
+REVIEW_ENVIRONMENT="${2}"
+SOURCE_ENVIRONMENT="${3-}"
+REVIEW_LOGICAL_VOLUME="${DRUPAL_RUNNER_LOGICAL_VOLUME_PREFIX}${REVIEW_ENVIRONMENT}"
+SOURCE_LOGICAL_VOLUME="${DRUPAL_RUNNER_LOGICAL_VOLUME_PREFIX}${SOURCE_ENVIRONMENT}"
+REVIEW_FILES_DIR="${DRUPAL_RUNNER_BASE_DIR}/${REVIEW_ENVIRONMENT}/web/sites/default/files"
+SOURCE_FILES_DIR="${DRUPAL_RUNNER_BASE_DIR}/${SOURCE_ENVIRONMENT}/web/sites/default/files"
+REVIEW_FSTAB_LINE="${REVIEW_LOGICAL_VOLUME} ${REVIEW_FILES_DIR} ext4 defaults 0 2"
+
+if [[ ! "${REVIEW_ENVIRONMENT}" =~ ^[a-z0-9-]{1,24}$ ]]; then
+  echo "Invalid review environment ${REVIEW_ENVIRONMENT}"
+  exit 1
+fi
+
+if [[ "${ACTION}" == "prepare_snapshot" && ! "${SOURCE_ENVIRONMENT}" =~ ^[a-z0-9-]{1,24}$ ]]; then
+  echo "Invalid source environment ${SOURCE_ENVIRONMENT}"
+  exit 1
+fi
+
+function create_logical_volume {
+  test -b "${REVIEW_LOGICAL_VOLUME}" || lvcreate --size "1G" --name "${REVIEW_LOGICAL_VOLUME}"
+}
+
+function create_snapshot {
+  test -b "${REVIEW_LOGICAL_VOLUME}" || lvcreate --size "256M" --snapshot --name "${REVIEW_LOGICAL_VOLUME}" "${SOURCE_LOGICAL_VOLUME}"
+}
+
+function create_file_system {
+  mkfs.ext4 "${REVIEW_LOGICAL_VOLUME}"
+}
+
+function set_files_ownership {
+  chown www-data:www-data "${REVIEW_FILES_DIR}"
+  chmod 0777 "${REVIEW_FILES_DIR}"
+}
+
+function create_fstab_record {
+  grep -q "${REVIEW_FSTAB_LINE}" /etc/fstab || echo "${REVIEW_FSTAB_LINE}" >> /etc/fstab
+}
+
+function remove_fstab_record {
+  grep -q "${REVIEW_FSTAB_LINE}" /etc/fstab && sed -i "/${REVIEW_FSTAB_LINE//\//\\/}/d" /etc/fstab || exit 0
+}
+
+function mount_logical_volume {
+  grep -q "${REVIEW_FILES_DIR}" /etc/mtab || mount "${REVIEW_FILES_DIR}"
+}
+
+function umount_logical_volume {
+  grep -q "${REVIEW_FILES_DIR}" /etc/mtab && umount "${REVIEW_FILES_DIR}" || exit 0
+}
+
+function remove_snapshot {
+  test -b "${REVIEW_LOGICAL_VOLUME}" && lvremove --force "${REVIEW_LOGICAL_VOLUME}" || exit 0
+}
+
+function sync_files {
+  rsync -a --delete "${SOURCE_FILES_DIR}/" "${REVIEW_FILES_DIR}/"
+}
+
+case "${ACTION}" in
+  "prepare_logical_volume")
+    create_logical_volume
+    create_file_system
+    create_fstab_record
+    mount_logical_volume
+    set_files_ownership
+    ;;
+  "prepare_snapshot")
+    create_snapshot
+    create_fstab_record
+    mount_logical_volume
+    ;;
+  "remove_snapshot")
+    umount_logical_volume
+    remove_fstab_record
+    remove_snapshot
+    ;;
+  "sync_files")
+    sync_files
+    ;;
+esac
